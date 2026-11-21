@@ -22,7 +22,7 @@
 - v2에서 시즌 직전에 시작된 세션 8개가 pre로 올바르게 이동
 */
 
-CREATE OR REPLACE TABLE `modulabs-project-465602.p1.sessions` AS
+CREATE OR REPLACE TABLE `__프로젝트ID__` AS   -- ① 테이블 경로
 
 WITH events AS (
   -- 이벤트 1개 = 1행: 필요한 컬럼만 꺼내고 세션 키 붙이기
@@ -35,7 +35,9 @@ WITH events AS (
     ) AS session_key,
     (SELECT value.int_value FROM UNNEST(event_params) WHERE key = 'ga_session_number') AS session_number,
     device.category AS device,
-    geo.country AS country
+    geo.country AS country,                          -- ② 마침표 → 쉼표
+    ecommerce.purchase_revenue_in_usd AS revenue,
+    ecommerce.transaction_id AS tx_id                -- ③ 별칭
   FROM
     `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
   WHERE
@@ -47,12 +49,15 @@ sessions AS (
   SELECT
     session_key,
     MIN(dt) AS session_date,
-    MAX(IF(event_name = 'view_item', 1, 0))        AS view_item,
-    MAX(IF(event_name = 'add_to_cart', 1, 0))      AS add_to_cart,
-    MAX(IF(event_name = 'begin_checkout', 1, 0))   AS begin_checkout,
-    MAX(IF(event_name = 'add_payment_info', 1, 0)) AS add_payment_info,
-    MAX(IF(event_name = 'purchase', 1, 0))         AS purchase,
-    MAX(IF(event_name = 'first_visit', 1, 0))      AS has_first_visit,
+    MAX(IF(event_name = 'view_item', 1, 0))         AS view_item,
+    MAX(IF(event_name = 'add_to_cart', 1, 0))       AS add_to_cart,
+    MAX(IF(event_name = 'begin_checkout', 1, 0))    AS begin_checkout,
+    MAX(IF(event_name = 'add_shipping_info', 1, 0)) AS add_shipping_info,   -- ④ 배송 정보
+    MAX(IF(event_name = 'add_payment_info', 1, 0))  AS add_payment_info,
+    MAX(IF(event_name = 'purchase', 1, 0))          AS purchase,
+    MAX(IF(event_name = 'purchase', revenue, NULL)) AS revenue,             -- ④ 매출 (중복 방지로 MAX)
+    COUNT(DISTINCT IF(event_name = 'purchase', tx_id, NULL)) AS tx_count,  -- ④ 고유 주문 수
+    MAX(IF(event_name = 'first_visit', 1, 0))       AS has_first_visit,
     MIN(session_number) AS session_number,
     ANY_VALUE(device)   AS device,
     ANY_VALUE(country)  AS country
