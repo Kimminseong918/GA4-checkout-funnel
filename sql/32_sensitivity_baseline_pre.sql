@@ -7,7 +7,7 @@
 - 조회 → 결제 시작 합산 전환율: 시즌 18.1% / 시즌 전 16.8% / 비시즌 9.5%
 
 [판단]
-- 단계별 비교 불가: 시즌 전은 장바구니 기록 누락 (23번)
+- 단계별 비교 불가: 시즌 전은 장바구니 기록이 대부분 빠짐 (29번)
 - 합산으로는 비시즌만 크게 낮음 → 구매 의도 감소는 연휴가 끝난 비시즌에만 나타난 현상
 
 [참고사항]
@@ -76,7 +76,7 @@ SELECT
   ROUND(season_rate * 100, 2) AS season_pct,
   ROUND(off_rate * 100, 2)    AS off_pct,
   ROUND(pre_rate * 100, 2)    AS pre_pct,
-  -- 기준선 1: 시즌 → 비시즌 (기존 결과)
+  -- 기준선 1: 시즌 → 비시즌 (메인 결과)
   ROUND(LN(off_rate / season_rate)
         / SUM(LN(off_rate / season_rate)) OVER () * 100, 1) AS contrib_vs_off,
   -- 기준선 2: 시즌 → 시즌 전 (민감도 확인)
